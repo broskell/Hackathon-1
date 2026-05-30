@@ -7,6 +7,7 @@ import { AlertCircle, BarChart3, ExternalLink, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { getAuthErrorMessage, normalizeAuthEmail } from '@/lib/auth-errors'
 import { ensureProfile } from '@/lib/supabase/ensure-profile'
 import { DEMO_CREDENTIALS } from '@/lib/demo-credentials'
 import { PasswordInput } from '@/components/shared/PasswordInput'
@@ -50,42 +51,12 @@ function LoginForm() {
         return
       }
 
-      const supabase = createClient()
-      let created = 0
-
-      for (const demo of Object.values(DEMO_CREDENTIALS)) {
-        const { error } = await supabase.auth.signUp({
-          email: demo.email,
-          password: demo.password,
-          options: { data: { full_name: demo.name, role: demo.role } },
-        })
-
-        if (!error) {
-          created++
-          continue
-        }
-
-        if (
-          error.message.includes('already registered') ||
-          error.message.includes('already exists')
-        ) {
-          created++
-          continue
-        }
-
-        if (error.message.includes('rate limit')) {
-          throw new Error(
-            'Supabase email rate limit hit. Add SUPABASE_SERVICE_ROLE_KEY to .env.local (see steps below), restart the server, then click this button again.'
-          )
-        }
-
-        throw error
-      }
-
-      if (created > 0) {
-        setSetupDone(true)
-        toast.success('Demo accounts created! Sign in now.')
-      }
+      // Do not fall back to client signUp — it hits the auth trigger and shows
+      // "Database error saving new user" when profiles insert fails.
+      throw new Error(
+        data.error ??
+          'Setup failed. Add SUPABASE_SERVICE_ROLE_KEY to .env.local, run supabase/FIX-TRIGGER.sql in SQL Editor, restart npm run dev, then try again.'
+      )
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Setup failed'
       setSetupError(message)
@@ -100,14 +71,18 @@ function LoginForm() {
     setLoading(true)
     try {
       const supabase = createClient()
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) {
-        if (error.message.toLowerCase().includes('invalid')) {
-          throw new Error(
-            'Invalid credentials. Click "Create Demo Accounts" below first, then sign in.'
-          )
-        }
-        throw error
+      const normalizedEmail = normalizeAuthEmail(email)
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      })
+      if (error) throw new Error(getAuthErrorMessage(error, 'login'))
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session) {
+        throw new Error('Sign-in succeeded but session was not created. Try again.')
       }
 
       const profile = await ensureProfile(supabase, data.user)

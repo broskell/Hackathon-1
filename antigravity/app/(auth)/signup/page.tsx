@@ -7,6 +7,7 @@ import { BarChart3, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { getAuthErrorMessage, normalizeAuthEmail } from '@/lib/auth-errors'
 import { ensureProfile } from '@/lib/supabase/ensure-profile'
 import { PasswordInput } from '@/components/shared/PasswordInput'
 import { Button } from '@/components/ui/button'
@@ -34,14 +35,16 @@ export default function SignupPage() {
     setLoading(true)
     try {
       const supabase = createClient()
+      const normalizedEmail = normalizeAuthEmail(email)
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: normalizedEmail,
         password,
         options: {
-          data: { full_name: fullName, role },
+          data: { full_name: fullName.trim(), role },
+          emailRedirectTo: `${window.location.origin}/login`,
         },
       })
-      if (error) throw error
+      if (error) throw new Error(getAuthErrorMessage(error, 'signup'))
       if (!data.user) throw new Error('Signup failed')
 
       if (data.session) {

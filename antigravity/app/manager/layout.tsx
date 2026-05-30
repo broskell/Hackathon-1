@@ -20,7 +20,7 @@ export default async function ManagerLayout({
   try {
     profile = await ensureProfile(supabase, user, 'manager')
   } catch {
-    redirect('/login?error=schema')
+    redirect('/setup')
   }
 
   if (profile.role !== 'manager') redirect('/employee/dashboard')

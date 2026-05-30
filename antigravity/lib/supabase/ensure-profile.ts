@@ -7,11 +7,15 @@ export async function ensureProfile(
   user: User,
   fallbackRole: UserRole = 'employee'
 ) {
-  const { data: existing } = await supabase
+  const { data: existing, error: selectError } = await supabase
     .from('profiles')
     .select('role, full_name')
     .eq('id', user.id)
     .maybeSingle()
+
+  if (selectError) {
+    throw new Error(`Could not load profile: ${selectError.message}`)
+  }
 
   if (existing) return existing
 
@@ -21,7 +25,7 @@ export async function ensureProfile(
     user.email?.split('@')[0] ??
     'User'
 
-  const { data, error } = await supabase
+  const { data, error: insertError } = await supabase
     .from('profiles')
     .insert({
       id: user.id,
@@ -32,11 +36,29 @@ export async function ensureProfile(
     .select('role, full_name')
     .single()
 
-  if (error) {
+  if (!insertError) {
+    return data
+  }
+
+  // Profile row may exist but SELECT was blocked (RLS) or id mismatch — retry read
+  if (insertError.code === '23505') {
+    const { data: retry, error: retryError } = await supabase
+      .from('profiles')
+      .select('role, full_name')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (retry) return retry
+    if (retryError) {
+      throw new Error(`Profile exists but cannot be read (RLS): ${retryError.message}`)
+    }
+
     throw new Error(
-      'Profile not found. Run supabase/schema.sql in your Supabase SQL Editor first.'
+      `Profile id mismatch. Auth user id is ${user.id} but no matching profiles row. Run supabase/FIX-PROFILE-ACCESS.sql in Supabase SQL Editor.`
     )
   }
 
-  return data
+  throw new Error(
+    `Could not create profile: ${insertError.message}. If this mentions permission or RLS, run supabase/FIX-PROFILE-ACCESS.sql in Supabase SQL Editor.`
+  )
 }

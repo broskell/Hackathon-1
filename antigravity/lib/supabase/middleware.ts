@@ -31,6 +31,8 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const isProtected =
     pathname.startsWith('/manager') || pathname.startsWith('/employee')
+  const isSetupPage = pathname === '/setup'
+  const hasLoginError = request.nextUrl.searchParams.has('error')
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone()
@@ -38,14 +40,32 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  if (!user && isSetupPage) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  // Allow setup page and login error states without redirect loops
+  if (user && (isSetupPage || (pathname === '/login' && hasLoginError))) {
+    return supabaseResponse
+  }
+
   if (user) {
     let role: UserRole | undefined
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .maybeSingle()
+
+    // Schema not applied — send to setup instead of dashboard loop
+    if (profileError && isProtected) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/setup'
+      return NextResponse.redirect(url)
+    }
 
     if (profile?.role) {
       role = profile.role as UserRole
