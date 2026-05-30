@@ -1,10 +1,10 @@
-import { type NextRequest } from 'next/server'
-import { updateSession } from '@/lib/supabase/middleware'
+import { type NextRequest, NextResponse } from 'next/server'
 
-export async function middleware(request: NextRequest) {
-  return updateSession(request)
+/** Demo mode: no auth — portals are open after role selection on /login */
+export function middleware(_request: NextRequest) {
+  return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/', '/login', '/signup', '/setup', '/manager/:path*', '/employee/:path*'],
+  matcher: [],
 }

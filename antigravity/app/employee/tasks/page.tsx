@@ -6,7 +6,7 @@ import { ClipboardList } from 'lucide-react'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { SkeletonCard } from '@/components/shared/SkeletonCard'
 import { TaskCard } from '@/components/tasks/TaskCard'
-import { createClient } from '@/lib/supabase/client'
+import { getEmployeeProfile, getTasks } from '@/lib/mock-data'
 import type { Task } from '@/types'
 
 export default function EmployeeTasksPage() {
@@ -14,21 +14,12 @@ export default function EmployeeTasksPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function load() {
-      const supabase = createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) return
-      const { data } = await supabase
-        .from('tasks')
-        .select('*, assignee:profiles!tasks_assigned_to_fkey(*)')
-        .eq('assigned_to', user.id)
-        .order('created_at', { ascending: false })
-      setTasks((data ?? []) as Task[])
+    void (async () => {
+      await new Promise((r) => setTimeout(r, 200))
+      const profile = getEmployeeProfile()
+      setTasks(getTasks({ assigned_to: profile.id }))
       setLoading(false)
-    }
-    void load()
+    })()
   }, [])
 
   return (
@@ -52,12 +43,12 @@ export default function EmployeeTasksPage() {
         <EmptyState
           icon={ClipboardList}
           title="No tasks assigned"
-          description="Your manager hasn't assigned any tasks yet."
+          description="Your manager will assign tasks here."
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {tasks.map((task, i) => (
-            <TaskCard key={task.id} task={task} href={`/employee/tasks/${task.id}`} index={i} />
+          {tasks.map((task) => (
+            <TaskCard key={task.id} task={task} href={`/employee/tasks/${task.id}`} />
           ))}
         </div>
       )}

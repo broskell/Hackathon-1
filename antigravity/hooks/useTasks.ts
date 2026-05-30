@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { getTasks } from '@/lib/mock-data'
 import type { Task } from '@/types'
 
 export function useTasks(assignedTo?: string) {
@@ -12,12 +13,8 @@ export function useTasks(assignedTo?: string) {
     setLoading(true)
     setError(null)
     try {
-      const params = new URLSearchParams()
-      if (assignedTo) params.set('assigned_to', assignedTo)
-      const res = await fetch(`/api/tasks?${params}`)
-      if (!res.ok) throw new Error('Failed to fetch tasks')
-      const data = (await res.json()) as Task[]
-      setTasks(data)
+      await new Promise((r) => setTimeout(r, 200))
+      setTasks(getTasks(assignedTo ? { assigned_to: assignedTo } : undefined))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {

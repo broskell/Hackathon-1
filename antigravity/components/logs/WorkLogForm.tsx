@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Loader2, Send } from 'lucide-react'
 import { toast } from 'sonner'
+import { createMockWorkLog } from '@/lib/mock-data'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -29,24 +30,17 @@ export function WorkLogForm({ taskId, onSubmitted }: WorkLogFormProps) {
     }
     setSubmitting(true)
     try {
-      const res = await fetch('/api/logs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          task_id: taskId,
-          content,
-          hours_worked: hours ? parseFloat(hours) : undefined,
-        }),
-      })
-      if (!res.ok) throw new Error('Failed to submit log')
-      const log = (await res.json()) as WorkLog
+      await new Promise((r) => setTimeout(r, 900))
+      const log = createMockWorkLog(
+        taskId,
+        content,
+        hours ? parseFloat(hours) : undefined
+      )
       setLatestLog(log)
       onSubmitted(log)
       setContent('')
       setHours('')
-      toast.success('Work log submitted & verified by AI')
-    } catch {
-      toast.error('Failed to submit work log')
+      toast.success('Work log submitted & verified by AI (demo)')
     } finally {
       setSubmitting(false)
     }

@@ -2,8 +2,6 @@
 
 import { useRouter } from 'next/navigation'
 import { LogOut, User } from 'lucide-react'
-import { toast } from 'sonner'
-import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/format'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
@@ -24,12 +22,8 @@ interface TopbarProps {
 export function Topbar({ title, subtitle, userName, mobileNav }: TopbarProps) {
   const router = useRouter()
 
-  async function handleLogout() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    toast.success('Signed out successfully')
+  function handleExit() {
     router.push('/login')
-    router.refresh()
   }
 
   return (
@@ -59,9 +53,9 @@ export function Topbar({ title, subtitle, userName, mobileNav }: TopbarProps) {
             {userName ?? 'Profile'}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => void handleLogout()}>
+          <DropdownMenuItem onClick={handleExit}>
             <LogOut className="size-4" />
-            Sign out
+            Switch portal
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

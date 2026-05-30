@@ -8,7 +8,7 @@ import { AccountabilityScoreBadge } from '@/components/shared/AccountabilityScor
 import { KPICard } from '@/components/dashboard/KPICard'
 import { SkeletonCard } from '@/components/shared/SkeletonCard'
 import { TaskCard } from '@/components/tasks/TaskCard'
-import { createClient } from '@/lib/supabase/client'
+import { getEmployeeProfile, getTasks } from '@/lib/mock-data'
 import type { Profile, Task } from '@/types'
 
 export default function EmployeeDashboardPage() {
@@ -17,32 +17,17 @@ export default function EmployeeDashboardPage() {
   const [tasksLoading, setTasksLoading] = useState(true)
 
   useEffect(() => {
-    async function load() {
-      const supabase = createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) return
-
-      const [profileRes, tasksRes] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', user.id).single(),
-        supabase
-          .from('tasks')
-          .select('*, assignee:profiles!tasks_assigned_to_fkey(*)')
-          .eq('assigned_to', user.id)
-          .order('created_at', { ascending: false }),
-      ])
-
-      setProfile(profileRes.data as Profile)
-      setTasks((tasksRes.data ?? []) as Task[])
+    void (async () => {
+      await new Promise((r) => setTimeout(r, 200))
+      const p = getEmployeeProfile()
+      setProfile(p)
+      setTasks(getTasks({ assigned_to: p.id }))
       setTasksLoading(false)
-    }
-    void load()
+    })()
   }, [])
 
-  const myTasks = tasks
-  const activeTasks = myTasks.filter((t) => t.status !== 'done')
-  const completedTasks = myTasks.filter((t) => t.status === 'done')
+  const activeTasks = tasks.filter((t) => t.status !== 'done')
+  const completedTasks = tasks.filter((t) => t.status === 'done')
 
   if (tasksLoading) {
     return (
@@ -85,20 +70,16 @@ export default function EmployeeDashboardPage() {
 
       <div>
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-text-primary">Assigned Tasks</h3>
+          <h3 className="text-lg font-semibold text-text-primary">Your tasks</h3>
           <Link href="/employee/tasks" className="text-sm text-accent hover:underline">
             View all
           </Link>
         </div>
-        {activeTasks.length === 0 ? (
-          <p className="py-8 text-center text-sm text-text-muted">No active tasks assigned</p>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {activeTasks.slice(0, 4).map((task, i) => (
-              <TaskCard key={task.id} task={task} href={`/employee/tasks/${task.id}`} index={i} />
-            ))}
-          </div>
-        )}
+        <div className="grid gap-4 md:grid-cols-2">
+          {activeTasks.slice(0, 4).map((task) => (
+            <TaskCard key={task.id} task={task} href={`/employee/tasks/${task.id}`} />
+          ))}
+        </div>
       </div>
     </motion.div>
   )

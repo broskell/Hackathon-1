@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { createClient } from '@/lib/supabase/client'
+import { getAuditLogs } from '@/lib/mock-data'
 import { formatDateTime } from '@/lib/format'
 import type { AuditLog, Profile } from '@/types'
 
@@ -22,17 +22,11 @@ export default function ManagerAuditPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function fetchLogs() {
-      const supabase = createClient()
-      const { data } = await supabase
-        .from('audit_logs')
-        .select('*, user:profiles(*)')
-        .order('created_at', { ascending: false })
-        .limit(100)
-      setLogs((data ?? []) as (AuditLog & { user?: Profile })[])
+    void (async () => {
+      await new Promise((r) => setTimeout(r, 200))
+      setLogs(getAuditLogs())
       setLoading(false)
-    }
-    void fetchLogs()
+    })()
   }, [])
 
   return (
@@ -43,7 +37,7 @@ export default function ManagerAuditPage() {
     >
       <div>
         <h2 className="text-2xl font-bold text-text-primary">Audit Trail</h2>
-        <p className="text-sm text-text-secondary">Complete history of all platform actions</p>
+        <p className="text-sm text-text-secondary">Sample history of platform actions (demo data)</p>
       </div>
 
       {loading ? (
@@ -51,36 +45,30 @@ export default function ManagerAuditPage() {
       ) : logs.length === 0 ? (
         <EmptyState
           icon={Shield}
-          title="No audit logs yet"
-          description="All actions will be logged here automatically."
+          title="No audit logs"
+          description="Demo audit entries appear here."
         />
       ) : (
-        <div className="rounded-xl border border-border bg-surface overflow-hidden">
+        <div className="overflow-hidden rounded-xl border border-border bg-surface">
           <Table>
             <TableHeader>
-              <TableRow className="border-border hover:bg-transparent">
-                <TableHead>Timestamp</TableHead>
+              <TableRow>
                 <TableHead>User</TableHead>
                 <TableHead>Action</TableHead>
                 <TableHead>Entity</TableHead>
+                <TableHead>Time</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {logs.map((log) => (
-                <TableRow key={log.id} className="border-border">
-                  <TableCell className="text-text-muted text-xs">
-                    {formatDateTime(log.created_at)}
-                  </TableCell>
-                  <TableCell className="text-text-primary">
+                <TableRow key={log.id}>
+                  <TableCell className="font-medium">
                     {log.user?.full_name ?? 'System'}
                   </TableCell>
-                  <TableCell>
-                    <span className="rounded bg-surface-2 px-2 py-0.5 text-xs font-mono text-accent">
-                      {log.action}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-text-secondary capitalize">
-                    {log.entity_type.replace('_', ' ')}
+                  <TableCell>{log.action.replace(/_/g, ' ')}</TableCell>
+                  <TableCell className="text-text-secondary">{log.entity_type}</TableCell>
+                  <TableCell className="text-text-muted">
+                    {formatDateTime(log.created_at)}
                   </TableCell>
                 </TableRow>
               ))}

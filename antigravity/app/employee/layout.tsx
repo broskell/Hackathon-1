@@ -1,29 +1,9 @@
-import { createClient } from '@/lib/supabase/server'
-import { ensureProfile } from '@/lib/supabase/ensure-profile'
-import { redirect } from 'next/navigation'
 import { EmployeeSidebar } from '@/components/layout/EmployeeSidebar'
 import { Topbar } from '@/components/layout/Topbar'
+import { getEmployeeProfile } from '@/lib/mock-data'
 
-export default async function EmployeeLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) redirect('/login')
-
-  let profile
-  try {
-    profile = await ensureProfile(supabase, user, 'employee')
-  } catch {
-    redirect('/setup')
-  }
-
-  if (profile.role !== 'employee') redirect('/manager/dashboard')
+export default function EmployeeLayout({ children }: { children: React.ReactNode }) {
+  const profile = getEmployeeProfile()
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">

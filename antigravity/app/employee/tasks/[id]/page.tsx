@@ -9,7 +9,7 @@ import { SkeletonCard } from '@/components/shared/SkeletonCard'
 import { TaskPriorityBadge } from '@/components/tasks/TaskPriorityBadge'
 import { TaskStatusBadge } from '@/components/tasks/TaskStatusBadge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { createClient } from '@/lib/supabase/client'
+import { getTaskById, getWorkLogs } from '@/lib/mock-data'
 import { formatDate } from '@/lib/format'
 import type { Task, WorkLog } from '@/types'
 
@@ -20,25 +20,13 @@ export default function EmployeeTaskDetailPage() {
   const [logs, setLogs] = useState<WorkLog[]>([])
   const [loading, setLoading] = useState(true)
 
-  async function loadLogs() {
-    const res = await fetch(`/api/logs?task_id=${id}`)
-    const data = (await res.json()) as WorkLog[]
-    setLogs(data)
-  }
-
   useEffect(() => {
-    async function load() {
-      const supabase = createClient()
-      const { data } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('id', id)
-        .single()
-      setTask(data as Task)
-      await loadLogs()
+    void (async () => {
+      await new Promise((r) => setTimeout(r, 200))
+      setTask(getTaskById(id) ?? null)
+      setLogs(getWorkLogs({ task_id: id }))
       setLoading(false)
-    }
-    void load()
+    })()
   }, [id])
 
   if (loading) return <SkeletonCard />
@@ -78,41 +66,17 @@ export default function EmployeeTaskDetailPage() {
 
         <Card className="border-border bg-surface">
           <CardHeader>
-            <CardTitle>Task Details</CardTitle>
+            <CardTitle>Log History</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4 text-sm">
-            <div>
-              <p className="text-text-muted">Due Date</p>
-              <p className="text-text-primary">{formatDate(task.due_date)}</p>
-            </div>
-            {task.deliverables.length > 0 && (
-              <div>
-                <p className="mb-2 text-text-muted">Deliverables</p>
-                <ul className="flex flex-col gap-1">
-                  {task.deliverables.map((d, i) => (
-                    <li key={i} className="text-text-secondary">• {d}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {task.suggested_plan && (
-              <div>
-                <p className="text-text-muted">Suggested Plan</p>
-                <p className="text-text-secondary">{task.suggested_plan}</p>
-              </div>
-            )}
+          <CardContent>
+            <LogHistoryList logs={logs} />
           </CardContent>
         </Card>
       </div>
 
-      <Card className="border-border bg-surface">
-        <CardHeader>
-          <CardTitle>Log History</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <LogHistoryList logs={logs} />
-        </CardContent>
-      </Card>
+      {task.due_date && (
+        <p className="text-xs text-text-muted">Due {formatDate(task.due_date)}</p>
+      )}
     </motion.div>
   )
 }

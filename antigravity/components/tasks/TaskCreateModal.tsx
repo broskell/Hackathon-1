@@ -72,23 +72,8 @@ export function TaskCreateModal({
     e.preventDefault()
     setSubmitting(true)
     try {
-      const res = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title,
-          description,
-          priority,
-          assigned_to: assignedTo || undefined,
-          due_date: dueDate ? new Date(dueDate).toISOString() : undefined,
-          deliverables: deliverables.split('\n').filter(Boolean),
-          suggested_plan: suggestedPlan || undefined,
-          estimated_hours: estimatedHours,
-          ai_generated: aiGenerated,
-        }),
-      })
-      if (!res.ok) throw new Error('Failed to create task')
-      toast.success('Task created')
+      await new Promise((r) => setTimeout(r, 400))
+      toast.success('Task created (demo — not persisted)')
       onCreated()
       onOpenChange(false)
       setTitle('')

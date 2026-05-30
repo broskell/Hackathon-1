@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { getEmployees } from '@/lib/mock-data'
 import type { Profile } from '@/types'
 
 export function useEmployees() {
@@ -13,15 +13,8 @@ export function useEmployees() {
     setLoading(true)
     setError(null)
     try {
-      const supabase = createClient()
-      const { data, error: fetchError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('role', 'employee')
-        .order('accountability_score', { ascending: false })
-
-      if (fetchError) throw fetchError
-      setEmployees((data ?? []) as Profile[])
+      await new Promise((r) => setTimeout(r, 150))
+      setEmployees(getEmployees())
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {

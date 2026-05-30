@@ -1,22 +1,33 @@
 'use client'
 
 import { useCallback, useState } from 'react'
+import {
+  MOCK_SMART_TASK,
+  MOCK_TEAM_SUMMARY,
+  MOCK_VERIFY_LOG,
+} from '@/lib/mock-data'
 import type { SmartTaskResult, TeamSummaryResult, VerifyLogResult } from '@/types'
 
 export function useAI() {
   const [loading, setLoading] = useState(false)
 
   const verifyLog = useCallback(
-    async (taskTitle: string, taskDescription: string, logContent: string) => {
+    async (_taskTitle: string, _taskDescription: string, logContent: string) => {
       setLoading(true)
       try {
-        const res = await fetch('/api/ai/verify-log', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ taskTitle, taskDescription, logContent }),
-        })
-        if (!res.ok) throw new Error('Verification failed')
-        return (await res.json()) as VerifyLogResult
+        await new Promise((r) => setTimeout(r, 800))
+        const vague =
+          logContent.length < 40 || /worked on stuff|made progress/i.test(logContent)
+        if (vague) {
+          return {
+            trust_score: 34,
+            confidence: 'High' as const,
+            ai_verdict: 'vague' as const,
+            ai_explanation: 'Vague language with no concrete artifacts or outcomes.',
+            ai_flags: ['no_specifics', 'generic_phrasing'],
+          } satisfies VerifyLogResult
+        }
+        return MOCK_VERIFY_LOG
       } finally {
         setLoading(false)
       }
@@ -27,24 +38,18 @@ export function useAI() {
   const generateTeamSummary = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/ai/team-summary', { method: 'POST' })
-      if (!res.ok) throw new Error('Summary generation failed')
-      return (await res.json()) as TeamSummaryResult & { id: string }
+      await new Promise((r) => setTimeout(r, 1200))
+      return MOCK_TEAM_SUMMARY
     } finally {
       setLoading(false)
     }
   }, [])
 
-  const suggestTask = useCallback(async (title: string, description: string) => {
+  const suggestTask = useCallback(async (_title: string, _description: string) => {
     setLoading(true)
     try {
-      const res = await fetch('/api/ai/smart-task', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, description }),
-      })
-      if (!res.ok) throw new Error('Smart task failed')
-      return (await res.json()) as SmartTaskResult
+      await new Promise((r) => setTimeout(r, 600))
+      return MOCK_SMART_TASK
     } finally {
       setLoading(false)
     }
